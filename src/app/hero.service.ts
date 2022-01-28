@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { from, Observable, of } from 'rxjs';
+import { from, Observable, ObservableLike, of } from 'rxjs';
 import { HttpClient, HttpHeaders} from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs';
 
@@ -14,6 +14,10 @@ import { HEROES } from './mock-heroes';
 export class HeroService {
 
   private heroesUrl = 'api/heroes';
+
+  httpOptions = {
+    headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+  };
 
   constructor(
     private http: HttpClient,
@@ -43,7 +47,6 @@ export class HeroService {
     }
   }
   
-
   getHeroes(): Observable<Hero[]> {
     return this.http.get<Hero[]>(this.heroesUrl).pipe(
       tap(_ => this.log('fetched heroes')),
@@ -52,11 +55,28 @@ export class HeroService {
   }
 
   getHero(id: number): Observable<Hero> {
-    // For now, assume that a hero with the specified `id` always exists.
-    // Error handling will be added in the next step of the tutorial.
-    const hero = HEROES.find(h => h.id === id)!;
-    this.log(`fetched hero id=${id}`);
-    return of(hero);
+    const url = `${this.heroesUrl}/${id}`;
+    return this.http.get<Hero>(url).pipe(
+      tap(_ => this.log(`fetched hero id=${id}`)),
+      catchError(this.handleError<Hero>(`getHero id=${id}`))
+    );
+  }
+
+  // getHero() before httpClient implemented
+  // getHero(id: number): Observable<Hero> {
+  //   // For now, assume that a hero with the specified `id` always exists.
+  //   // Error handling will be added in the next step of the tutorial.
+  //   const hero = HEROES.find(h => h.id === id)!;
+  //   this.log(`fetched hero id=${id}`);
+  //   return of(hero);
+  // }
+
+  // PUT: update the hero on the server
+  updateHero(hero: Hero): Observable<any> {
+    return this.http.put(this.heroesUrl, hero, this.httpOptions).pipe(
+      tap(_ => this.log(`updated hero id=${hero.id}`)),
+      catchError(this.handleError<any>('updateHero'))
+    );
   }
 
 }
